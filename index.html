@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuRide - Ride Sharing</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <!-- Loading Indicator -->
+    <div id="loading-indicator">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="app">
+        <!-- Login/Register Tab -->
+        <div id="login" class="tab-content">
+            <div class="auth-box">
+                <div class="logo">
+                    <h1>SuRide</h1>
+                    <p>Your Campus Ride Sharing Platform</p>
+                </div>
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-form="login-form">Login</button>
+                    <button class="auth-tab" data-form="register-form">Register</button>
+                </div>
+                
+                <!-- Login Form -->
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                    <p id="login-error" class="error-message"></p>
+                </form>
+                
+                <!-- Register Form -->
+                <form id="register-form" class="auth-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="register-name">Full Name</label>
+                        <input type="text" id="register-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-phone">Phone Number</label>
+                        <input type="tel" id="register-phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                    <p id="register-error" class="error-message"></p>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Main App Container -->
+        <div id="main-container">
+            <!-- Header -->
+            <header>
+                <div class="logo">
+                    <h1>SuRide</h1>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <img id="user-avatar" src="img/default-profile.png" alt="User Avatar">
+                    </div>
+                    <span id="user-name"></span>
+                    <button id="logout-btn" class="btn btn-small">Logout</button>
+                </div>
+            </header>
+            
+            <!-- Tab Navigation -->
+            <nav class="tabs">
+                <button class="tab active" data-tab="rides">
+                    <i class="fas fa-car"></i> Rides
+                </button>
+                <button class="tab" data-tab="create">
+                    <i class="fas fa-plus-circle"></i> Create
+                </button>
+                <button class="tab" data-tab="messages">
+                    <i class="fas fa-comment"></i> Messages
+                    <span id="unread-badge" class="badge" style="display: none;">0</span>
+                </button>
+                <button class="tab" data-tab="profile">
+                    <i class="fas fa-user"></i> Profile
+                </button>
+            </nav>
+            
+            <!-- Rides Tab -->
+            <div id="rides" class="tab-content">
+                <div class="search-filter-container">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="ride-search" placeholder="Search rides...">
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="available">Available</button>
+                        <button class="filter-btn" data-filter="my-rides">My Rides</button>
+                        <button class="filter-btn" data-filter="joined">Joined</button>
+                    </div>
+                </div>
+                <div id="rides-container"></div>
+            </div>
+            
+            <!-- Create Tab -->
+            <div id="create" class="tab-content" style="display: none;">
+                <h2>Create a Ride</h2>
+                <form id="create-ride-form">
+                    <div class="form-group">
+                        <label for="departure">Departure Point</label>
+                        <select id="departure" required>
+                            <option value="Sabancı University">Sabancı University</option>
+                            <option value="Kadıköy">Kadıköy</option>
+                            <option value="Taksim">Taksim</option>
+                            <option value="Üsküdar">Üsküdar</option>
+                            <option value="Maltepe">Maltepe</option>
+                            <option value="Pendik">Pendik</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="arrival">Arrival Point</label>
+                        <select id="arrival" required>
+                            <option value="Kadıköy">Kadıköy</option>
+                            <option value="Sabancı University">Sabancı University</option>
+                            <option value="Taksim">Taksim</option>
+                            <option value="Üsküdar">Üsküdar</option>
+                            <option value="Maltepe">Maltepe</option>
+                            <option value="Pendik">Pendik</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ride-type">Ride Type</label>
+                        <select id="ride-type" required>
+                            <option value="Carpool">Carpool</option>
+                            <option value="Taxi">Taxi</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="price">Price (TL)</label>
+                        <input type="number" id="price" min="0" value="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="date-time">Date & Time</label>
+                        <input type="datetime-local" id="date-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="seats">Available Seats</label>
+                        <input type="number" id="seats" min="1" max="10" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description (Optional)</label>
+                        <textarea id="description" rows="3" placeholder="Add any additional details about the ride..."></textarea>
+                    </div>
+                    <div id="driver-info-section">
+                        <h3>Driver Information</h3>
+                        <div class="form-group">
+                            <label for="car-plate">Car Plate Number</label>
+                            <input type="text" id="car-plate">
+                        </div>
+                        <div class="form-group">
+                            <label for="car-model">Car Model</label>
+                            <input type="text" id="car-model">
+                        </div>
+                        <div class="form-group">
+                            <label for="car-color">Car Color</label>
+                            <input type="text" id="car-color">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Ride</button>
+                    <p id="create-error" class="error-message"></p>
+                    <p id="create-success" class="success-message"></p>
+                </form>
+            </div>
+            
+            <!-- Messages Tab -->
+            <div id="messages" class="tab-content" style="display: none;">
+                <div class="messages-container">
+                    <div class="chat-list">
+                        <h3>Conversations</h3>
+                        <div id="chats-list"></div>
+                    </div>
+                    <div class="chat-window">
+                        <div id="chat-header">
+                            <h3>Select a conversation</h3>
+                        </div>
+                        <div id="messages-list"></div>
+                        <form id="message-form" style="display: none;">
+                            <input type="text" id="message-input" placeholder="Type a message...">
+                            <button type="submit" class="btn btn-primary">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Profile Tab -->
+            <div id="profile" class="tab-content" style="display: none;">
+                <div class="profile-container">
+                    <div class="profile-header">
+                        <div class="profile-image-container">
+                            <img id="profile-image" src="img/default-profile.png" alt="Profile Image">
+                            <label for="image-upload" class="image-upload-label">
+                                <i class="fas fa-camera"></i>
+                            </label>
+                            <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                        </div>
+                        <h2>My Profile</h2>
+                    </div>
+                    
+                    <form id="profile-form">
+                        <div class="form-group">
+                            <label for="profile-name">Full Name</label>
+                            <input type="text" id="profile-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-email">Email</label>
+                            <input type="email" id="profile-email" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-phone">Phone Number</label>
+                            <input type="tel" id="profile-phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-bio">Bio (Optional)</label>
+                            <textarea id="profile-bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+                        </div>
+                        <div class="driver-info">
+                            <h3>Driver Information</h3>
+                            <div class="form-group">
+                                <label for="profile-car-plate">Car Plate Number</label>
+                                <input type="text" id="profile-car-plate">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-car-model">Car Model</label>
+                                <input type="text" id="profile-car-model">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-car-color">Car Color</label>
+                                <input type="text" id="profile-car-color">
+                            </div>
+                        </div>
+                        <button type="submit" id="save-profile" class="btn btn-primary">Save Profile</button>
+                        <p id="profile-error" class="error-message"></p>
+                        <p id="profile-success" class="success-message"></p>
+                    </form>
+                    
+                    <div class="my-rides-section">
+                        <h3>My Rides</h3>
+                        <div class="tabs">
+                            <button class="tab active" data-tab="my-created-rides">Created</button>
+                            <button class="tab" data-tab="my-joined-rides">Joined</button>
+                        </div>
+                        <div id="my-created-rides" class="my-rides-list"></div>
+                        <div id="my-joined-rides" class="my-rides-list" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Templates -->
+    <template id="ride-card-template">
+        <div class="ride-card">
+            <div class="ride-header">
+                <div class="ride-type"></div>
+                <div class="ride-price"></div>
+            </div>
+            <div class="ride-route">
+                <div class="departure">
+                    <i class="fas fa-circle departure-icon"></i>
+                    <span class="departure-text"></span>
+                </div>
+                <div class="route-line"></div>
+                <div class="arrival">
+                    <i class="fas fa-map-marker-alt arrival-icon"></i>
+                    <span class="arrival-text"></span>
+                </div>
+            </div>
+            <div class="ride-details">
+                <div class="ride-time">
+                    <i class="far fa-clock"></i>
+                    <span class="time-text"></span>
+                </div>
+                <div class="ride-driver">
+                    <i class="fas fa-user"></i>
+                    <span class="driver-name"></span>
+                </div>
+                <div class="ride-seats">
+                    <i class="fas fa-users"></i>
+                    <span class="seats-text"></span>
+                </div>
+            </div>
+            <button class="btn btn-primary view-details-btn">View Details</button>
+        </div>
+    </template>
+    
+    <template id="chat-item-template">
+        <div class="chat-item">
+            <div class="chat-info">
+                <h4 class="chat-name"></h4>
+                <p class="last-message"></p>
+            </div>
+            <div class="chat-meta">
+                <span class="chat-time"></span>
+                <span class="unread-count"></span>
+            </div>
+        </div>
+    </template>
+    
+    <template id="message-template">
+        <div class="message">
+            <div class="message-header">
+                <span class="sender-name"></span>
+                <span class="message-time"></span>
+            </div>
+            <div class="message-content"></div>
+        </div>
+    </template>
+    
+    <!-- Modal for Ride Details -->
+    <div id="ride-details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Ride Details</h2>
+            <div id="modal-ride-details"></div>
+            <div class="modal-actions">
+                <button id="join-ride-btn" class="btn btn-primary">Join Ride</button>
+                <button id="leave-ride-btn" class="btn btn-danger" style="display: none;">Leave Ride</button>
+                <button id="chat-with-driver-btn" class="btn btn-secondary">Chat with Driver</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/rides.js"></script>
+    <script src="js/messages.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html> 
